@@ -76,8 +76,8 @@ export function FormEmitente({ emitente: e }: { emitente?: Emitente }) {
         </div>
       </section>
 
-      {estado.erro && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{estado.erro}</p>}
-      {estado.ok && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{estado.ok}</p>}
+      {estado.erro && <p role="alert" className="alerta-erro">{estado.erro}</p>}
+      {estado.ok && <p role="status" className="alerta-sucesso">{estado.ok}</p>}
       <button className="botao" disabled={salvando}>
         {salvando ? "Salvando…" : "Salvar dados da empresa"}
       </button>

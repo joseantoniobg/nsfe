@@ -21,19 +21,19 @@ function lerStatusCertificado() {
 
 function StatusCertificado({ cnpjEmitente }: { cnpjEmitente?: string }) {
   const c = lerStatusCertificado();
-  if ("erro" in c) return <p className="text-sm text-red-700">{c.erro}</p>;
+  if ("erro" in c) return <p className="text-sm text-erro">{c.erro}</p>;
   const divergente = cnpjEmitente && c.documento && c.documento !== cnpjEmitente;
   return (
     <div className="space-y-1 text-sm">
       <p>
-        <span className="text-zinc-500">Titular:</span> {c.titular}
+        <span className="text-texto-3">Titular:</span> {c.titular}
       </p>
       <p>
-        <span className="text-zinc-500">Válido até:</span> {c.validoAte.toLocaleDateString("pt-BR")}{" "}
-        <span className={c.diasRestantes < 30 ? "font-medium text-red-700" : "text-zinc-500"}>({c.diasRestantes} dias)</span>
+        <span className="text-texto-3">Válido até:</span> {c.validoAte.toLocaleDateString("pt-BR")}{" "}
+        <span className={c.diasRestantes < 30 ? "font-medium text-erro" : "text-texto-3"}>({c.diasRestantes} dias)</span>
       </p>
       {divergente && (
-        <p className="font-medium text-red-700">
+        <p className="font-medium text-erro">
           Atenção: o certificado é do CNPJ {formatarDocumento(c.documento!)}, diferente do emitente configurado.
         </p>
       )}
@@ -52,7 +52,7 @@ async function Conteudo() {
       <div className="grid gap-6 md:grid-cols-2">
         <section className="cartao">
           <h2 className="mb-1 font-semibold">Importar notas do Emissor Nacional</h2>
-          <p className="mb-4 text-sm text-zinc-600">
+          <p className="mb-4 text-sm text-texto-3">
             Baixe no portal o XML de notas que você já emitiu. Cada tipo de serviço vira um perfil, com os códigos que o portal já aceitou, e os
             tomadores viram clientes ligados ao perfil da nota deles.
           </p>
@@ -72,34 +72,36 @@ async function Conteudo() {
           </Link>
         </div>
         {perfis.length ? (
-          <table className="tabela">
-            <thead>
-              <tr>
-                <th>Perfil</th>
-                <th>Código</th>
-                <th>ISSQN</th>
-                <th>IBS/CBS</th>
-                <th>Clientes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {perfis.map((p) => (
-                <tr key={p.id} className="hover:bg-zinc-50">
-                  <td>
-                    <Link href={`/configuracao/servicos/${p.id}`} className="font-medium underline-offset-2 hover:underline">
-                      {p.nome}
-                    </Link>
-                  </td>
-                  <td className="tabular-nums">{p.cTribNac}</td>
-                  <td>{p.comExt ? `Exportação (${p.comExt.moeda})` : p.tribISSQN === "1" ? "Tributável" : p.tribISSQN}</td>
-                  <td className="tabular-nums">{p.ibscbsAtivo && p.cClassTrib ? `${p.cClassTrib}${p.cIndOp ? ` / ${p.cIndOp}` : ""}` : "-"}</td>
-                  <td>{p.clientes.map((c) => c.nome).join(", ") || "-"}</td>
+          <div className="rolagem-tabela">
+            <table className="tabela">
+              <thead>
+                <tr>
+                  <th>Perfil</th>
+                  <th>Código</th>
+                  <th>ISSQN</th>
+                  <th>IBS/CBS</th>
+                  <th>Clientes</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {perfis.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <Link href={`/configuracao/servicos/${p.id}`} className="link">
+                        {p.nome}
+                      </Link>
+                    </td>
+                    <td className="tabular-nums">{p.cTribNac}</td>
+                    <td>{p.comExt ? `Exportação (${p.comExt.moeda})` : p.tribISSQN === "1" ? "Tributável" : p.tribISSQN}</td>
+                    <td className="tabular-nums">{p.ibscbsAtivo && p.cClassTrib ? `${p.cClassTrib}${p.cIndOp ? ` / ${p.cIndOp}` : ""}` : "-"}</td>
+                    <td>{p.clientes.map((c) => c.nome).join(", ") || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <p className="text-sm text-zinc-500">Nenhum perfil. Importe XMLs do portal ou crie um.</p>
+          <p className="text-sm text-texto-3">Nenhum perfil. Importe XMLs do portal ou crie um.</p>
         )}
       </section>
 
@@ -112,7 +114,7 @@ async function Conteudo() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Carregando…</p>}>
+    <Suspense fallback={<p className="text-sm text-texto-3">Carregando…</p>}>
       <Conteudo />
     </Suspense>
   );

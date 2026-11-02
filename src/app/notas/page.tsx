@@ -15,7 +15,7 @@ export default function Page() {
   return (
     <div className="cartao">
       <h1 className="mb-4 text-lg font-semibold">Notas</h1>
-      <Suspense fallback={<p className="text-sm text-zinc-500">Carregando…</p>}>
+      <Suspense fallback={<p className="text-sm text-texto-3">Carregando…</p>}>
         <Lista />
       </Suspense>
     </div>

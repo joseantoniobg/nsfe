@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { formatarMoeda, lerValor } from "@/lib/nfse/formatos";
 import { emitirAction } from "./actions";
 
 interface ClienteOpcao {
@@ -17,6 +18,12 @@ interface PerfilOpcao {
 }
 
 const paraCampo = (v: string | null) => (v ? Number(v).toFixed(2).replace(".", ",") : "");
+
+function rotuloEmitir(valor: string, moeda?: string | null) {
+  const numero = lerValor(valor);
+  if (!(numero > 0)) return "Emitir NFS-e";
+  return `Emitir NFS-e de ${moeda ? `${moeda} ${numero.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : formatarMoeda(numero)}`;
+}
 
 export function FormEmitir({ clientes, perfis, hoje }: { clientes: ClienteOpcao[]; perfis: PerfilOpcao[]; hoje: string }) {
   const [estado, acao, enviando] = useActionState(emitirAction, {});
@@ -74,10 +81,10 @@ export function FormEmitir({ clientes, perfis, hoje }: { clientes: ClienteOpcao[
         {moeda && <p className="ajuda">Convertido para reais pela PTAX de {moeda} da data de competência.</p>}
       </div>
 
-      <details className="rounded-lg border border-zinc-200 px-4 py-3 text-sm">
-        <summary className="cursor-pointer text-zinc-600">Opções (competência, perfil, descrição{moeda ? ", cotação" : ""})</summary>
+      <details className="rounded-lg border border-borda px-4 py-3 text-sm">
+        <summary className="cursor-pointer text-texto-3">Opções (competência, perfil, descrição{moeda ? ", cotação" : ""})</summary>
         <div className="mt-4 space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4">
             <div>
               <label className="rotulo" htmlFor="competencia">
                 Competência
@@ -115,10 +122,10 @@ export function FormEmitir({ clientes, perfis, hoje }: { clientes: ClienteOpcao[
         </div>
       </details>
 
-      {estado.erro && <p className="whitespace-pre-line rounded-lg bg-red-50 p-3 text-sm text-red-800">{estado.erro}</p>}
+      {estado.erro && <p role="alert" className="alerta-erro">{estado.erro}</p>}
 
       <button className="botao w-full py-3 text-base" disabled={enviando}>
-        {enviando ? "Emitindo…" : "Emitir NFS-e"}
+        {enviando ? "Emitindo…" : rotuloEmitir(valor, moeda)}
       </button>
     </form>
   );

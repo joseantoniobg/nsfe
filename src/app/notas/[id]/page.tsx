@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { StatusNota } from "@/components/status-nota";
+import { Voltar } from "@/components/voltar";
 import { db } from "@/db";
 import { notas } from "@/db/schema";
 import { formatarDocumento, formatarMoeda } from "@/lib/nfse/formatos";
@@ -41,23 +42,23 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
       <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[160px_1fr]">
         {linhas.map(([rotulo, valor]) => (
           <div key={rotulo} className="contents">
-            <dt className="text-zinc-500">{rotulo}</dt>
+            <dt className="text-texto-3">{rotulo}</dt>
             <dd>{valor}</dd>
           </div>
         ))}
-        <dt className="text-zinc-500">Descrição</dt>
+        <dt className="text-texto-3">Descrição</dt>
         <dd className="whitespace-pre-line">{nota.descricao}</dd>
       </dl>
 
       {nota.mensagens?.length ? (
-        <div className={`rounded-lg p-4 text-sm ${nota.status === "emitida" ? "bg-amber-50 text-amber-900" : "bg-red-50 text-red-900"}`}>
+        <div className={`rounded-lg p-4 text-sm ${nota.status === "emitida" ? "bg-aviso-fundo text-aviso" : "bg-erro-fundo text-erro"}`}>
           <p className="mb-2 font-medium">{nota.status === "emitida" ? "Alertas da Sefin" : "Mensagens da Sefin"}</p>
           <ul className="list-disc space-y-1 pl-5">
             {nota.mensagens.map((m, i) => (
               <li key={i}>
                 {m.codigo && <strong>{m.codigo}: </strong>}
                 {m.descricao}
-                {m.complemento && <span className="text-zinc-600"> — {m.complemento}</span>}
+                {m.complemento && <span className="text-texto-3"> — {m.complemento}</span>}
               </li>
             ))}
           </ul>
@@ -89,8 +90,11 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
 
 export default function Page(props: PageProps<"/notas/[id]">) {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Carregando…</p>}>
-      <Detalhe params={props.params} />
-    </Suspense>
+    <>
+      <Voltar href="/notas" rotulo="Notas" />
+      <Suspense fallback={<p className="text-sm text-texto-3">Carregando…</p>}>
+        <Detalhe params={props.params} />
+      </Suspense>
+    </>
   );
 }

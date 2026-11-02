@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { Voltar } from "@/components/voltar";
 import { db } from "@/db";
 import { servicos } from "@/db/schema";
 import { listarItensServico } from "@/lib/nfse/correlacao";
@@ -22,8 +23,11 @@ async function Editar({ params }: { params: Promise<{ id: string }> }) {
 
 export default function Page(props: PageProps<"/configuracao/servicos/[id]">) {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Carregando…</p>}>
-      <Editar params={props.params} />
-    </Suspense>
+    <>
+      <Voltar href="/configuracao" rotulo="Configuração" />
+      <Suspense fallback={<p className="text-sm text-texto-3">Carregando…</p>}>
+        <Editar params={props.params} />
+      </Suspense>
+    </>
   );
 }

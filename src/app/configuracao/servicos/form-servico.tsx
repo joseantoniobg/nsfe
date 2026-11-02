@@ -21,7 +21,14 @@ export function FormServico({ servico: s, correlacao }: { servico?: Servico; cor
         <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
           <Campo nome="nome" rotulo="Nome do perfil" padrao={s?.nome} required placeholder="Ex.: Suporte (Brasil)" />
           <label className="flex items-center gap-2 pb-2 text-sm">
-            <input type="checkbox" name="exportacao" checked={exportacao} onChange={(ev) => setExportacao(ev.target.checked)} /> Exportação de serviço
+            <input
+              type="checkbox"
+              className="size-4 accent-primaria"
+              name="exportacao"
+              checked={exportacao}
+              onChange={(ev) => setExportacao(ev.target.checked)}
+            />{" "}
+            Exportação de serviço
           </label>
         </div>
       </section>
@@ -82,7 +89,7 @@ export function FormServico({ servico: s, correlacao }: { servico?: Servico; cor
           {exportacao ? (
             <div>
               <span className="rotulo">Tributação do ISSQN</span>
-              <p className="campo bg-zinc-100">3 - Exportação</p>
+              <p className="campo bg-sutil">3 - Exportação</p>
             </div>
           ) : (
             <Selecao
@@ -135,7 +142,7 @@ export function FormServico({ servico: s, correlacao }: { servico?: Servico; cor
       <section className="space-y-4">
         <h2 className="font-semibold">Reforma tributária (IBS/CBS)</h2>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="ibscbsAtivo" defaultChecked={s?.ibscbsAtivo ?? true} /> Enviar grupo IBSCBS na DPS
+          <input type="checkbox" className="size-4 accent-primaria" name="ibscbsAtivo" defaultChecked={s?.ibscbsAtivo ?? true} /> Enviar grupo IBSCBS na DPS
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -248,7 +255,7 @@ export function FormServico({ servico: s, correlacao }: { servico?: Servico; cor
         </section>
       )}
 
-      {estado.erro && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{estado.erro}</p>}
+      {estado.erro && <p role="alert" className="alerta-erro">{estado.erro}</p>}
       <button className="botao" disabled={salvando}>
         {salvando ? "Salvando…" : "Salvar perfil"}
       </button>

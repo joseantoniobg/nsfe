@@ -107,8 +107,8 @@ export function FormCliente({ cliente, perfis }: { cliente?: Cliente; perfis: Pe
         {input("fone", "Telefone")}
       </div>
 
-      <fieldset className="space-y-4 rounded-lg border border-zinc-200 p-4">
-        <legend className="px-1 text-sm text-zinc-500">Endereço (opcional, enviado só se completo)</legend>
+      <fieldset className="space-y-4 rounded-lg border border-borda p-4">
+        <legend className="px-1 text-sm text-texto-3">Endereço (opcional, enviado só se completo)</legend>
         <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
           {input("logradouro", estrangeiro ? "Endereço (street)" : "Logradouro")}
           {input("numero", "Número")}
@@ -169,7 +169,7 @@ export function FormCliente({ cliente, perfis }: { cliente?: Cliente; perfis: Pe
         <p className="ajuda">Opcional. Substitui a descrição padrão do perfil para este cliente (aceita as mesmas variáveis).</p>
       </div>
 
-      {estado.erro && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{estado.erro}</p>}
+      {estado.erro && <p role="alert" className="alerta-erro">{estado.erro}</p>}
       <button className="botao" disabled={salvando}>
         {salvando ? "Salvando…" : "Salvar cliente"}
       </button>
