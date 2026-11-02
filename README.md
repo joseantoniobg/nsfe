@@ -47,6 +47,7 @@ Variáveis da descrição: `{competencia}`, `{mes}`, `{ano}`, `{mesAno}`, `{mesA
 | `DATABASE_URL` | Conexão Postgres |
 | `CERT_PFX_PATH` / `CERT_PFX_SENHA` | Certificado A1 (.pfx) e senha |
 | `NFSE_AMBIENTE` | `2` = Produção Restrita, `1` = Produção |
+| `NFSE_LEIAUTE` | (opcional) `atual` ou `nt009`. Por padrão, produção usa `atual` e Produção Restrita usa `nt009`; defina `nt009` quando a produção migrar |
 | `NFSE_CA_PATH` | (opcional) CA extra para validar o servidor da Sefin, se o Node não confiar na cadeia |
 | `NFSE_ASSINATURA` | (opcional) `sha256` para assinar com RSA-SHA256 em vez de RSA-SHA1 |
 | `NFSE_URL_SEFIN` | (opcional) URL alternativa da API, para testes |
