@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // bibliotecas de XML/criptografia e o driver do Postgres rodam só no servidor, sem bundling
+  serverExternalPackages: ["xml-crypto", "node-forge", "postgres", "pdf-lib", "qrcode"],
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
