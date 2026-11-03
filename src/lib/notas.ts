@@ -70,16 +70,15 @@ export async function emitirNota(pedido: PedidoEmissao): Promise<Nota> {
     cambio = { moeda, valorMoeda: pedido.valor, cotacao: ptax.valor, dataCotacao: ptax.data };
   }
 
-  const descricao =
-    pedido.descricao?.trim() ||
-    aplicarModeloDescricao(cliente.descricao || servico.descricaoPadrao, {
-      competencia,
-      valor,
-      moeda: cambio?.moeda,
-      valorMoeda: cambio?.valorMoeda,
-      cotacao: cambio?.cotacao,
-      dataCotacao: cambio?.dataCotacao,
-    });
+  // A descrição digitada também passa pelo modelo: variáveis só conhecidas aqui (ex.: {cotacao}) são preenchidas.
+  const descricao = aplicarModeloDescricao(pedido.descricao?.trim() || cliente.descricao || servico.descricaoPadrao, {
+    competencia,
+    valor,
+    moeda: cambio?.moeda,
+    valorMoeda: cambio?.valorMoeda,
+    cotacao: cambio?.cotacao,
+    dataCotacao: cambio?.dataCotacao,
+  });
 
   const nota = await db.transaction(async (tx) => {
     const [{ numero }] = await tx
