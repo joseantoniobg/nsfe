@@ -29,7 +29,11 @@ export const descompactarXml = (b64: string) => gunzipSync(Buffer.from(b64, "bas
 
 function chamar(ambiente: Ambiente, cert: Certificado, metodo: string, caminho: string, corpo?: unknown): Promise<RespostaHttp> {
   // NFSE_URL_SEFIN permite apontar para um servidor de testes.
-  const url = new URL((process.env.NFSE_URL_SEFIN ?? URL_SEFIN[ambiente]) + caminho);
+  return requisitar(new URL((process.env.NFSE_URL_SEFIN ?? URL_SEFIN[ambiente]) + caminho), cert, metodo, corpo);
+}
+
+/** Requisição HTTPS com autenticação mútua TLS (usada pela Sefin e pelo ADN). */
+export function requisitar(url: URL, cert: Certificado, metodo: string, corpo?: unknown): Promise<RespostaHttp> {
   const dados = corpo === undefined ? undefined : Buffer.from(JSON.stringify(corpo));
   const caExtra = process.env.NFSE_CA_PATH ? readFileSync(process.env.NFSE_CA_PATH) : undefined;
 
@@ -63,15 +67,15 @@ function chamar(ambiente: Ambiente, cert: Certificado, metodo: string, caminho: 
         });
       },
     );
-    req.on("timeout", () => req.destroy(new Error("Tempo esgotado aguardando a Sefin Nacional")));
-    req.on("error", (e) => reject(new ErroComunicacao(`Falha de comunicação com a Sefin Nacional: ${e.message}`)));
+    req.on("timeout", () => req.destroy(new Error(`Tempo esgotado aguardando ${url.host}`)));
+    req.on("error", (e) => reject(new ErroComunicacao(`Falha de comunicação com ${url.host}: ${e.message}`)));
     if (dados) req.write(dados);
     req.end();
   });
 }
 
 /** Lê um campo ignorando maiúsculas/minúsculas (a API mistura "Codigo"/"codigo"). */
-function campo(obj: Record<string, unknown>, nome: string): unknown {
+export function campo(obj: Record<string, unknown>, nome: string): unknown {
   const chave = Object.keys(obj).find((k) => k.toLowerCase() === nome.toLowerCase());
   return chave ? obj[chave] : undefined;
 }

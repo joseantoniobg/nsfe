@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { importarXmlsAction } from "../actions";
+import { importarDoAdnAction, importarXmlsAction } from "../actions";
 
 export function FormImportar() {
   const [estado, acao, enviando] = useActionState(importarXmlsAction, null);
@@ -16,6 +16,31 @@ export function FormImportar() {
         <div role="status" className="alerta-sucesso">
           {estado.notasLidas} nota(s) lida(s), {estado.servicosNovos} perfil(is) de serviço e {estado.clientesNovos} cliente(s) novo(s)
           {estado.emitenteAtualizado && "; dados da empresa atualizados"}.
+          {estado.avisos.length > 0 && (
+            <ul className="mt-2 list-disc pl-5 text-aviso">
+              {estado.avisos.map((a, i) => (
+                <li key={i}>{a}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </form>
+  );
+}
+
+export function FormImportarAdn() {
+  const [estado, acao, buscando] = useActionState(importarDoAdnAction, null);
+  return (
+    <form action={acao} className="space-y-3">
+      <button className="botao-secundario" disabled={buscando}>
+        {buscando ? "Buscando…" : "Buscar notas emitidas"}
+      </button>
+      {estado && "erro" in estado && <p role="alert" className="alerta-erro">{estado.erro}</p>}
+      {estado && "notasNovas" in estado && (
+        <div role="status" className="alerta-sucesso">
+          {estado.notasNovas} nota(s) nova(s), {estado.canceladas} cancelamento(s) aplicado(s)
+          {estado.clientesNovos > 0 && ` e ${estado.clientesNovos} cliente(s) inativo(s) criado(s)`}.
           {estado.avisos.length > 0 && (
             <ul className="mt-2 list-disc pl-5 text-aviso">
               {estado.avisos.map((a, i) => (

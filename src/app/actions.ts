@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { clientes, emitente, notas, servicos, type ComercioExterior } from "@/db/schema";
 import { consultarCnpj, type DadosCnpj } from "@/lib/cnpj";
-import { importarXmls, type ResultadoImportacao } from "@/lib/importacao";
+import { importarDoAdn, importarXmls, type ResultadoImportacao, type ResultadoSincronizacao } from "@/lib/importacao";
 import { cancelarNota, emitirNota, reprocessarNota } from "@/lib/notas";
 import { lerValor, normalizarDocumento, somenteDigitos } from "@/lib/nfse/formatos";
 
@@ -226,6 +226,16 @@ export async function importarXmlsAction(_: ResultadoImportacao | { erro: string
   if (!arquivos.length) return { erro: "Selecione ao menos um XML." };
   try {
     const resultado = await importarXmls(await Promise.all(arquivos.map(async (a) => ({ nome: a.name, conteudo: await a.text() }))));
+    refresh();
+    return resultado;
+  } catch (e) {
+    return { erro: (e as Error).message };
+  }
+}
+
+export async function importarDoAdnAction(): Promise<ResultadoSincronizacao | { erro: string }> {
+  try {
+    const resultado = await importarDoAdn();
     refresh();
     return resultado;
   } catch (e) {

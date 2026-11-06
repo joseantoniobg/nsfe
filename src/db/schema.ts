@@ -18,6 +18,8 @@ export const emitente = pgTable("emitente", {
 
   serie: text("serie").notNull().default("1"),
   proximoNumero: integer("proximo_numero").notNull().default(1),
+  // Último NSU lido na distribuição do ADN (importação das notas emitidas fora do sistema)
+  ultimoNsuAdn: integer("ultimo_nsu_adn").notNull().default(0),
   atualizadoEm: timestamp("atualizado_em", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -106,6 +108,8 @@ export const clientes = pgTable(
   (t) => [uniqueIndex("clientes_documento_idx").on(t.documento)],
 );
 
+export const origemNota = pgEnum("origem_nota", ["sistema", "importada"]);
+
 export const statusNota = pgEnum("status_nota", ["processando", "emitida", "rejeitada", "erro", "cancelada"]);
 
 export const notas = pgTable(
@@ -131,6 +135,8 @@ export const notas = pgTable(
     numeroDps: integer("numero_dps").notNull(),
     idDps: text("id_dps").notNull(),
     status: statusNota("status").notNull().default("processando"),
+    // importada = emitida fora do sistema (Emissor Nacional/prefeitura) e trazida do ADN
+    origem: origemNota("origem").notNull().default("sistema"),
     chaveAcesso: text("chave_acesso"),
     numeroNfse: text("numero_nfse"),
     xmlDps: text("xml_dps"),
@@ -140,7 +146,7 @@ export const notas = pgTable(
     criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
     emitidaEm: timestamp("emitida_em", { withTimezone: true }),
   },
-  (t) => [uniqueIndex("notas_id_dps_idx").on(t.idDps)],
+  (t) => [uniqueIndex("notas_id_dps_idx").on(t.idDps), uniqueIndex("notas_chave_acesso_idx").on(t.chaveAcesso)],
 );
 
 export const servicosRelations = relations(servicos, ({ many }) => ({ clientes: many(clientes) }));

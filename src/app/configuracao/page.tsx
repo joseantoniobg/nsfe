@@ -8,7 +8,7 @@ import { certificadoConfigurado } from "@/lib/nfse/certificado";
 import { formatarDocumento } from "@/lib/nfse/formatos";
 import { obterEmitente } from "@/lib/notas";
 import { FormEmitente } from "./form-emitente";
-import { FormImportar } from "./form-importar";
+import { FormImportar, FormImportarAdn } from "./form-importar";
 
 function lerStatusCertificado() {
   try {
@@ -57,6 +57,12 @@ async function Conteudo() {
             tomadores viram clientes ligados ao perfil da nota deles.
           </p>
           <FormImportar />
+          <h3 className="mt-6 mb-1 text-sm font-semibold">Histórico de notas</h3>
+          <p className="mb-3 text-sm text-texto-3">
+            Busca no Sistema Nacional todas as NFS-e emitidas pelo seu CNPJ, inclusive as feitas no portal ou no emissor da prefeitura, e os
+            cancelamentos. Pode repetir: só traz o que for novo.
+          </p>
+          <FormImportarAdn />
         </section>
         <section className="cartao">
           <h2 className="mb-3 font-semibold">Certificado digital</h2>

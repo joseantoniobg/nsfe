@@ -1,10 +1,16 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { clientes, emitente, servicos, type ComercioExterior } from "@/db/schema";
+import { clientes, emitente, notas, servicos, type ComercioExterior } from "@/db/schema";
+import { distribuicaoDfe, type LoteAdn } from "./nfse/adn";
+import { certificadoConfigurado } from "./nfse/certificado";
 import { correlacaoPorCodigo } from "./nfse/correlacao";
+import type { Ambiente } from "./nfse/dps";
 import { normalizarDocumento } from "./nfse/formatos";
 import { lerNfse, type DadosNfse } from "./nfse/leitura";
+import { ErroComunicacao } from "./nfse/sefin";
+import { caminho, lerXml, texto } from "./nfse/xml";
+import { ambienteConfigurado } from "./notas";
 
 export interface ResultadoImportacao {
   notasLidas: number;
@@ -15,7 +21,7 @@ export interface ResultadoImportacao {
 }
 
 // Código numérico de moeda usado no comExt (o Emissor Nacional usa ISO 4217) -> sigla para a PTAX.
-const MOEDAS: Record<string, string> = { "840": "USD", "978": "EUR", "826": "GBP", "124": "CAD", "036": "AUD", "756": "CHF", "392": "JPY" };
+const MOEDAS: Record<string, string> = { "840": "USD", "220": "USD" /* código Bacen, usado pelo emissor municipal */, "978": "EUR", "826": "GBP", "124": "CAD", "036": "AUD", "756": "CHF", "392": "JPY" };
 
 // Exportação de serviço: imunidade (CST 410), cClassTrib 410004.
 const CCLASSTRIB_EXPORTACAO = "410004";
@@ -69,15 +75,25 @@ function comExtDaNota(n: DadosNfse): ComercioExterior | null {
   };
 }
 
+const localDaPrestacao = (d: DadosNfse["dps"]) => (d.cLocPrestacao && d.cLocPrestacao !== d.codMunicipio ? d.cLocPrestacao : null);
+
+/** Perfil de serviço já cadastrado equivalente ao da nota, se houver. */
+async function perfilExistente(n: DadosNfse): Promise<number | undefined> {
+  const d = n.dps;
+  if (!d.cTribNac) return undefined;
+  const cLocPrestacao = localDaPrestacao(d);
+  const existentes = await db.query.servicos.findMany({ where: eq(servicos.cTribNac, d.cTribNac) });
+  return existentes.find((s) => s.tribISSQN === (d.tribISSQN ?? "1") && (s.cLocPrestacao ?? null) === cLocPrestacao)?.id;
+}
+
 /** Encontra (ou cria) o perfil de serviço equivalente ao da nota. */
 async function perfilDaNota(n: DadosNfse): Promise<{ id: number; novo: boolean; semNbs?: boolean }> {
   const d = n.dps;
   const exportacao = d.tribISSQN === "3";
-  const cLocPrestacao = d.cLocPrestacao && d.cLocPrestacao !== d.codMunicipio ? d.cLocPrestacao : null;
+  const cLocPrestacao = localDaPrestacao(d);
 
-  const existentes = await db.query.servicos.findMany({ where: eq(servicos.cTribNac, d.cTribNac!) });
-  const igual = existentes.find((s) => s.tribISSQN === (d.tribISSQN ?? "1") && (s.cLocPrestacao ?? null) === cLocPrestacao);
-  if (igual) return { id: igual.id, novo: false };
+  const igual = await perfilExistente(n);
+  if (igual) return { id: igual, novo: false };
 
   const sugestao = correlacaoPorCodigo(d.cTribNac!);
   const [criado] = await db
@@ -187,4 +203,161 @@ export async function importarXmls(arquivos: { nome: string; conteudo: string }[
   }
 
   return { notasLidas: lidas.length, clientesNovos, servicosNovos, emitenteAtualizado, avisos };
+}
+
+export interface ResultadoSincronizacao {
+  notasNovas: number;
+  canceladas: number;
+  clientesNovos: number;
+  ultimoNsu: number;
+  avisos: string[];
+}
+
+const nomeComparavel = (v: string | null | undefined) => (v ?? "").toUpperCase().replace(/[^0-9A-Z]/g, "");
+
+/** Cliente do tomador da nota; tomador ainda não cadastrado vira cliente inativo (só histórico). */
+async function clienteDaNota(n: DadosNfse, servicoId: number | undefined): Promise<{ id: number; novo: boolean } | null> {
+  const t = n.tomador;
+  const documento = normalizarDocumento(t.documento);
+  if (documento) {
+    const c = await db.query.clientes.findFirst({ where: eq(clientes.documento, documento), columns: { id: true } });
+    if (c) return { id: c.id, novo: false };
+  }
+  // Estrangeiro sem NIF (cNaoNIF) não tem documento: procura pelo nome.
+  const nome = nomeComparavel(t.nome);
+  if (nome) {
+    const todos = await db.query.clientes.findMany({ columns: { id: true, nome: true } });
+    const c = todos.find((c) => nomeComparavel(c.nome) === nome);
+    if (c) return { id: c.id, novo: false };
+  }
+  if (!documento || !t.nome) return null;
+  const [criado] = await db
+    .insert(clientes)
+    .values({
+      documento,
+      nome: t.nome,
+      email: t.email,
+      fone: t.fone,
+      pais: t.pais ?? "BR",
+      codMunicipio: t.codMunicipio,
+      cep: t.cep,
+      codigoPostal: t.codigoPostal,
+      cidade: t.cidade,
+      estadoProvincia: t.estadoProvincia,
+      logradouro: t.logradouro,
+      numero: t.numero,
+      complemento: t.complemento,
+      bairro: t.bairro,
+      servicoId,
+      ativo: false,
+    })
+    .returning({ id: clientes.id });
+  return { id: criado.id, novo: true };
+}
+
+/** Chave da NFS-e cancelada por um evento (cancelamento simples ou por substituição). */
+function chaveCancelada(xmlEvento: string): string | undefined {
+  const ped = caminho(lerXml(xmlEvento), "evento/infEvento/pedRegEvento/infPedReg");
+  if (!caminho(ped, "e101101") && !caminho(ped, "e105102")) return undefined;
+  return texto(ped, "chNFSe");
+}
+
+async function loteComRetentativa(ambiente: Ambiente, cnpj: string, nsu: number): Promise<LoteAdn> {
+  const cert = certificadoConfigurado();
+  for (let tentativa = 1; ; tentativa++) {
+    try {
+      return await distribuicaoDfe(ambiente, cert, cnpj, nsu);
+    } catch (e) {
+      // O ADN às vezes derruba a conexão (ECONNRESET); espera um pouco e tenta de novo.
+      if (!(e instanceof ErroComunicacao) || tentativa === 3) throw e;
+      await new Promise((r) => setTimeout(r, 2000 * tentativa));
+    }
+  }
+}
+
+/**
+ * Traz do Ambiente de Dados Nacional as NFS-e emitidas pelo CNPJ fora deste sistema (Emissor
+ * Nacional, emissor da prefeitura) e aplica os cancelamentos. Continua do último NSU lido;
+ * notas que já estão no banco (mesma DPS ou chave) são ignoradas.
+ */
+export async function importarDoAdn(): Promise<ResultadoSincronizacao> {
+  const config = await db.query.emitente.findFirst();
+  if (!config) throw new Error("Configure os dados do emitente antes de importar.");
+  const ambiente = ambienteConfigurado();
+  const resultado: ResultadoSincronizacao = { notasNovas: 0, canceladas: 0, clientesNovos: 0, ultimoNsu: config.ultimoNsuAdn, avisos: [] };
+  const cancelamentos: { chave: string; xml: string }[] = [];
+
+  for (;;) {
+    const lote = await loteComRetentativa(ambiente, config.cnpj, resultado.ultimoNsu);
+    if (!lote.encontrou) break;
+
+    for (const d of lote.documentos) {
+      if (!d.xml) continue;
+      if (d.tipo === "EVENTO") {
+        const chave = chaveCancelada(d.xml);
+        if (chave) cancelamentos.push({ chave, xml: d.xml });
+        continue;
+      }
+      if (d.tipo !== "NFSE") continue;
+
+      const n = lerNfse(d.xml);
+      // Notas recebidas (o CNPJ é tomador) também vêm na distribuição.
+      if (normalizarDocumento(n.prestador.documento) !== config.cnpj) continue;
+      if (!n.dps.id || !n.dps.competencia) {
+        resultado.avisos.push(`NSU ${d.nsu}: NFS-e ${n.numero ?? ""} sem identificação da DPS ou competência; ignorada.`);
+        continue;
+      }
+
+      const servicoId = await perfilExistente(n);
+      const cliente = await clienteDaNota(n, servicoId);
+      if (!cliente) {
+        resultado.avisos.push(`NFS-e ${n.numero ?? ""} (NSU ${d.nsu}): tomador sem documento nem cliente com o mesmo nome; ignorada.`);
+        continue;
+      }
+      if (cliente.novo) resultado.clientesNovos++;
+
+      const valor = Number(n.valores.servico);
+      const valorMoeda = n.dps.valorMoeda ? Number(n.dps.valorMoeda) : undefined;
+      const emissao = new Date(n.dps.dhEmi ?? n.dataProcessamento ?? n.dps.competencia);
+      const inseridas = await db
+        .insert(notas)
+        .values({
+          clienteId: cliente.id,
+          servicoId,
+          valor: valor.toFixed(2),
+          moeda: valorMoeda ? (MOEDAS[n.dps.comExt?.tpMoeda ?? ""] ?? "USD") : undefined,
+          valorMoeda: valorMoeda?.toFixed(2),
+          cotacao: valorMoeda ? (valor / valorMoeda).toFixed(6) : undefined,
+          descricao: n.dps.descricao ?? "",
+          competencia: n.dps.competencia,
+          ambiente: n.ambiente ?? ambiente,
+          serie: n.dps.serie ?? "",
+          numeroDps: Number(n.dps.numero ?? 0),
+          idDps: n.dps.id,
+          status: "emitida",
+          origem: "importada",
+          chaveAcesso: d.chaveAcesso ?? n.chaveAcesso,
+          numeroNfse: n.numero,
+          xmlNfse: d.xml,
+          criadoEm: emissao,
+          emitidaEm: n.dataProcessamento ? new Date(n.dataProcessamento) : emissao,
+        })
+        .onConflictDoNothing()
+        .returning({ id: notas.id });
+      resultado.notasNovas += inseridas.length;
+    }
+
+    // Cancelamentos do lote são aplicados antes de avançar o NSU, para não se perderem numa falha.
+    for (const c of cancelamentos.splice(0)) {
+      const atualizadas = await db
+        .update(notas)
+        .set({ status: "cancelada", xmlCancelamento: c.xml })
+        .where(and(eq(notas.chaveAcesso, c.chave), eq(notas.status, "emitida")))
+        .returning({ id: notas.id });
+      resultado.canceladas += atualizadas.length;
+    }
+    resultado.ultimoNsu = Math.max(resultado.ultimoNsu, ...lote.documentos.map((d) => d.nsu));
+    await db.update(emitente).set({ ultimoNsuAdn: resultado.ultimoNsu }).where(eq(emitente.id, config.id));
+  }
+  return resultado;
 }
