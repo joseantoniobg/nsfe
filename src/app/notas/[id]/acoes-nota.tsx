@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { cancelarAction, reprocessarAction, type EstadoForm } from "../../actions";
+import { cancelarAction, reprocessarAction, salvarValorRecebidoAction, type EstadoForm } from "../../actions";
 
 export function Reprocessar({ id }: { id: number }) {
   const [pendente, iniciar] = useTransition();
@@ -14,6 +14,30 @@ export function Reprocessar({ id }: { id: number }) {
       {estado.erro && <p role="alert" className="text-sm text-erro">{estado.erro}</p>}
       {estado.ok && <p role="status" className="text-sm text-sucesso">{estado.ok}</p>}
     </div>
+  );
+}
+
+/** Exportação: reais que de fato entraram, que podem diferir do valor da nota pela variação do câmbio. */
+export function ValorRecebido({ id, valor }: { id: number; valor: string | null }) {
+  const [estado, acao, enviando] = useActionState(salvarValorRecebidoAction.bind(null, id), {});
+  return (
+    <form action={acao} className="space-y-1">
+      <div className="flex max-w-xs gap-2">
+        <input
+          name="valorRecebido"
+          inputMode="decimal"
+          placeholder="Não informado"
+          aria-label="Valor recebido em reais"
+          className="campo tabular-nums"
+          defaultValue={valor ? Number(valor).toFixed(2).replace(".", ",") : ""}
+        />
+        <button className="botao-secundario shrink-0" disabled={enviando}>
+          {enviando ? "Salvando…" : "Salvar"}
+        </button>
+      </div>
+      {estado.erro && <p role="alert" className="text-sm text-erro">{estado.erro}</p>}
+      {estado.ok && <p role="status" className="text-sm text-sucesso">{estado.ok}</p>}
+    </form>
   );
 }
 

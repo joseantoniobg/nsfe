@@ -7,7 +7,7 @@ import { Voltar } from "@/components/voltar";
 import { db } from "@/db";
 import { notas } from "@/db/schema";
 import { formatarDocumento, formatarMoeda } from "@/lib/nfse/formatos";
-import { Cancelar, Reprocessar } from "./acoes-nota";
+import { Cancelar, Reprocessar, ValorRecebido } from "./acoes-nota";
 
 async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
   await connection();
@@ -24,7 +24,8 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
             "Câmbio",
             `${nota.moeda} ${Number(nota.valorMoeda).toLocaleString("en-US", { minimumFractionDigits: 2 })} × ${Number(nota.cotacao).toLocaleString("pt-BR", { maximumFractionDigits: 6 })} (PTAX ${nota.dataCotacao?.split("-").reverse().join("/")})`,
           ],
-        ] as [string, string][])
+          ["Valor recebido (R$)", <ValorRecebido key="recebido" id={nota.id} valor={nota.valorRecebido} />],
+        ] as [string, React.ReactNode][])
       : []),
     ["Competência", nota.competencia.split("-").reverse().join("/")],
     ["DPS", `série ${nota.serie}, nº ${nota.numeroDps}`],

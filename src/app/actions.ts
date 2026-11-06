@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { clientes, emitente, servicos, type ComercioExterior } from "@/db/schema";
+import { clientes, emitente, notas, servicos, type ComercioExterior } from "@/db/schema";
 import { consultarCnpj, type DadosCnpj } from "@/lib/cnpj";
 import { importarXmls, type ResultadoImportacao } from "@/lib/importacao";
 import { cancelarNota, emitirNota, reprocessarNota } from "@/lib/notas";
@@ -30,6 +30,7 @@ export async function emitirAction(_: EstadoForm, form: FormData): Promise<Estad
       valor: lerValor(String(form.get("valor") ?? "")),
       servicoId: Number(form.get("servicoId")) || undefined,
       cotacao: textoOuNulo(form, "cotacao") ? Number(String(form.get("cotacao")).replace(",", ".")) : undefined,
+      valorRecebido: lerValor(String(form.get("valorRecebido") ?? "")) || undefined,
       descricao: textoOuNulo(form, "descricao") ?? undefined,
       competencia: textoOuNulo(form, "competencia") ?? undefined,
     });
@@ -48,6 +49,18 @@ export async function reprocessarAction(id: number): Promise<EstadoForm> {
   } catch (e) {
     return { erro: (e as Error).message };
   }
+}
+
+export async function salvarValorRecebidoAction(id: number, _: EstadoForm, form: FormData): Promise<EstadoForm> {
+  const texto = textoOuNulo(form, "valorRecebido");
+  const valor = texto ? lerValor(texto) : null;
+  if (valor !== null && !(valor > 0)) return { erro: "Informe um valor maior que zero (ou deixe em branco)." };
+  await db
+    .update(notas)
+    .set({ valorRecebido: valor?.toFixed(2) ?? null })
+    .where(eq(notas.id, id));
+  refresh();
+  return { ok: "Valor recebido salvo." };
 }
 
 export async function cancelarAction(id: number, _: EstadoForm, form: FormData): Promise<EstadoForm> {

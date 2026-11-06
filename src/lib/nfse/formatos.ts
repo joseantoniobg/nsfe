@@ -49,6 +49,11 @@ export function hojeBrasilia(): string {
   return dataHoraBrasilia(new Date()).slice(0, 10);
 }
 
+/** Dia 01 do mês corrente (Brasília): competência padrão da emissão. */
+export function inicioMesBrasilia(): string {
+  return hojeBrasilia().slice(0, 8) + "01";
+}
+
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
 export interface ContextoDescricao {

@@ -122,6 +122,8 @@ export const notas = pgTable(
     valorMoeda: numeric("valor_moeda", { precision: 15, scale: 2 }),
     cotacao: numeric("cotacao", { precision: 12, scale: 6 }),
     dataCotacao: text("data_cotacao"),
+    // Exportação: quanto de fato entrou em reais (câmbio do recebimento); usado no caixa
+    valorRecebido: numeric("valor_recebido", { precision: 15, scale: 2 }),
     descricao: text("descricao").notNull(),
     competencia: text("competencia").notNull(), // AAAA-MM-DD
     ambiente: text("ambiente").notNull(), // 1 produção, 2 produção restrita

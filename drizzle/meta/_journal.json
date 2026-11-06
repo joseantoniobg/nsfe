@@ -15,6 +15,13 @@
       "when": 1793621920751,
       "tag": "0001_dusty_winter_soldier",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793907661746,
+      "tag": "0002_pale_daredevil",
+      "breakpoints": true
     }
   ]
 }

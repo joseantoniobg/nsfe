@@ -34,7 +34,10 @@ export function TabelaNotas({ notas, compacta = false }: { notas: (Nota & { clie
                   {n.cliente.nome}
                 </span>
               </td>
-              <td className="whitespace-nowrap text-right tabular-nums">{formatarMoeda(n.valor)}</td>
+              <td className="whitespace-nowrap text-right tabular-nums">
+                {formatarMoeda(n.valor)}
+                {n.valorRecebido && <span className="block text-xs text-texto-3">recebido {formatarMoeda(n.valorRecebido)}</span>}
+              </td>
               <td>
                 <StatusNota status={n.status} />
               </td>

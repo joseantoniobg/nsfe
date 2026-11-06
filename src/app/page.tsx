@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { TabelaNotas } from "@/components/tabela-notas";
 import { db } from "@/db";
 import { clientes, notas } from "@/db/schema";
-import { hojeBrasilia } from "@/lib/nfse/formatos";
+import { inicioMesBrasilia } from "@/lib/nfse/formatos";
 import { obterEmitente } from "@/lib/notas";
 import { listarPerfisOpcao } from "@/lib/perfis";
 import { FormEmitir } from "./form-emitir";
@@ -38,7 +38,7 @@ async function Conteudo() {
       <section className="cartao h-fit">
         <h1 className="mb-5 text-lg font-semibold">Emitir NFS-e</h1>
         {lista.length ? (
-          <FormEmitir clientes={lista} perfis={perfis} hoje={hojeBrasilia()} />
+          <FormEmitir clientes={lista} perfis={perfis} competenciaPadrao={inicioMesBrasilia()} />
         ) : (
           <p className="text-sm text-texto-3">
             Cadastre um cliente primeiro.{" "}

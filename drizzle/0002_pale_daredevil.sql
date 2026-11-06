@@ -1,0 +1,1 @@
+ALTER TABLE "notas" ADD COLUMN "valor_recebido" numeric(15, 2);

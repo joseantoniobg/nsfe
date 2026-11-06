@@ -27,14 +27,14 @@ function rotuloEmitir(valor: string, moeda?: string | null) {
   return `Emitir NFS-e de ${moeda ? `${moeda} ${numero.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : formatarMoeda(numero)}`;
 }
 
-export function FormEmitir({ clientes, perfis, hoje }: { clientes: ClienteOpcao[]; perfis: PerfilOpcao[]; hoje: string }) {
+export function FormEmitir({ clientes, perfis, competenciaPadrao }: { clientes: ClienteOpcao[]; perfis: PerfilOpcao[]; competenciaPadrao: string }) {
   const [estado, acao, enviando] = useActionState(emitirAction, {});
   const unico = clientes.length === 1 ? clientes[0] : undefined;
   const [clienteId, setClienteId] = useState(unico ? String(unico.id) : "");
   const [valor, setValor] = useState(paraCampo(unico?.valorPadrao ?? null));
   const perfilPadrao = (c?: ClienteOpcao) => String(c?.servicoId ?? (perfis.length === 1 ? perfis[0].id : ""));
   const [servicoId, setServicoId] = useState(perfilPadrao(unico));
-  const [competencia, setCompetencia] = useState(hoje);
+  const [competencia, setCompetencia] = useState(competenciaPadrao);
   const [descricaoEditada, setDescricaoEditada] = useState<string | null>(null);
   const moeda = perfis.find((p) => String(p.id) === servicoId)?.moeda;
 
@@ -95,6 +95,16 @@ export function FormEmitir({ clientes, perfis, hoje }: { clientes: ClienteOpcao[
         />
         {moeda && <p className="ajuda">Convertido para reais pela PTAX de {moeda} da data de competência.</p>}
       </div>
+
+      {moeda && (
+        <div>
+          <label className="rotulo" htmlFor="valorRecebido">
+            Valor recebido (R$)
+          </label>
+          <input id="valorRecebido" name="valorRecebido" inputMode="decimal" placeholder="Opcional" className="campo tabular-nums" />
+          <p className="ajuda">Quanto de fato entrou na conta, para o caixa. Pode ser informado depois, nos detalhes da nota.</p>
+        </div>
+      )}
 
       <details className="rounded-lg border border-borda px-4 py-3 text-sm">
         <summary className="cursor-pointer text-texto-3">Opções (competência, perfil, descrição{moeda ? ", cotação" : ""})</summary>

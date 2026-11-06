@@ -6,7 +6,7 @@ import { assinarXml } from "./nfse/assinatura";
 import { certificadoConfigurado } from "./nfse/certificado";
 import { montarDps, montarPedidoCancelamento, tomadorEstrangeiro, type Ambiente } from "./nfse/dps";
 import { obterPtax } from "./ptax";
-import { aplicarModeloDescricao, hojeBrasilia } from "./nfse/formatos";
+import { aplicarModeloDescricao, inicioMesBrasilia } from "./nfse/formatos";
 import { lerNfse } from "./nfse/leitura";
 import { consultarChavePorDps, consultarNfse, enviarDps, ErroComunicacao, registrarEvento, type MensagemSefin } from "./nfse/sefin";
 
@@ -23,6 +23,7 @@ export interface PedidoEmissao {
   valor: number; // na moeda do perfil de serviço (reais, ou ex.: USD na exportação)
   servicoId?: number; // padrão: o perfil do cliente
   cotacao?: number; // exportação: sobrescreve a PTAX
+  valorRecebido?: number; // exportação: reais que de fato entraram (caixa)
   descricao?: string;
   competencia?: string;
 }
@@ -58,7 +59,7 @@ export async function emitirNota(pedido: PedidoEmissao): Promise<Nota> {
 
   const cert = certificadoConfigurado();
   const ambiente = ambienteConfigurado();
-  const competencia = pedido.competencia || hojeBrasilia();
+  const competencia = pedido.competencia || inicioMesBrasilia();
 
   // Exportação: o valor digitado está em moeda estrangeira; converte pela PTAX da competência.
   let valor = pedido.valor;
@@ -111,6 +112,7 @@ export async function emitirNota(pedido: PedidoEmissao): Promise<Nota> {
         valorMoeda: cambio?.valorMoeda.toFixed(2),
         cotacao: cambio ? String(cambio.cotacao) : undefined,
         dataCotacao: cambio?.dataCotacao,
+        valorRecebido: cambio && pedido.valorRecebido ? pedido.valorRecebido.toFixed(2) : undefined,
         descricao,
         competencia,
         ambiente,
